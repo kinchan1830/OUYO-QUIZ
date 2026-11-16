@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="応用情報クイズ">
+  <title>応用情報 用語クイズ</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">応用情報 用語クイズ</h1>
+  </header>
+
+  <main id="app">
+    <!-- ホーム -->
+    <section id="view-home" class="view">
+      <div class="card stats" id="home-stats"></div>
+
+      <div class="card" id="setup-card">
+        <h2>出題設定</h2>
+        <label class="field">分野
+          <select id="opt-category"></select>
+        </label>
+        <label class="field">対象
+          <select id="opt-target">
+            <option value="all">すべての問題</option>
+            <option value="unanswered">未回答の問題</option>
+            <option value="wrong">前回まちがえた問題</option>
+            <option value="weak">正答率80%未満の問題</option>
+          </select>
+        </label>
+        <label class="field">出題順
+          <select id="opt-order">
+            <option value="weak">苦手な問題を優先</option>
+            <option value="random">ランダム</option>
+            <option value="sequential">取り込んだ順</option>
+          </select>
+        </label>
+        <label class="field">問題数
+          <select id="opt-count">
+            <option value="10">10問</option>
+            <option value="20">20問</option>
+            <option value="50">50問</option>
+            <option value="0">すべて</option>
+          </select>
+        </label>
+        <div class="field">回答方式
+          <div class="seg" id="opt-mode">
+            <button type="button" data-mode="choice" class="on">4択</button>
+            <button type="button" data-mode="card">暗記カード</button>
+          </div>
+        </div>
+        <p class="hint" id="setup-hint"></p>
+        <button class="btn primary big" id="btn-start">スタート</button>
+      </div>
+
+      <div class="card">
+        <h2>問題ファイルを取り込む</h2>
+        <p class="hint">CSV または JSON を選んでください（複数可）。同じ問題文の問題は重複して登録されず、回答履歴も引き継がれます。</p>
+        <label class="btn big file-btn">
+          ファイルを選ぶ
+          <input type="file" id="file-input" accept=".csv,.json,text/csv,application/json" multiple hidden>
+        </label>
+        <div id="import-result" class="import-result" hidden></div>
+      </div>
+    </section>
+
+    <!-- クイズ -->
+    <section id="view-quiz" class="view" hidden>
+      <div class="quiz-head">
+        <button class="btn ghost small" id="btn-quit">やめる</button>
+        <div class="progress"><div class="bar" id="quiz-bar"></div></div>
+        <span id="quiz-count" class="muted"></span>
+      </div>
+      <div class="card q-card">
+        <div class="q-meta"><span class="tag" id="q-category"></span><span class="muted" id="q-history-mini"></span></div>
+        <p class="q-text" id="q-text"></p>
+      </div>
+      <div id="q-choices" class="choices"></div>
+      <div id="q-cardmode" hidden>
+        <button class="btn primary big" id="btn-reveal">答えを見る</button>
+      </div>
+      <div id="q-feedback" class="card feedback" hidden>
+        <div class="verdict" id="q-verdict"></div>
+        <p class="answer"><span class="muted">答え</span><br><strong id="q-answer"></strong></p>
+        <p class="explanation" id="q-explanation"></p>
+        <p class="source muted" id="q-source"></p>
+        <div class="history-line" id="q-history"></div>
+        <div id="q-selfjudge" class="selfjudge" hidden>
+          <button class="btn ok big" id="btn-judge-ok">○ 正解だった</button>
+          <button class="btn ng big" id="btn-judge-ng">× まちがえた</button>
+        </div>
+        <button class="btn primary big" id="btn-next" hidden>次へ</button>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section id="view-result" class="view" hidden>
+      <div class="card result-summary" id="result-summary"></div>
+      <div class="row">
+        <button class="btn primary big" id="btn-retry-wrong">まちがえた問題をもう一度</button>
+        <button class="btn big" id="btn-home">ホームへ</button>
+      </div>
+      <div id="result-list" class="list"></div>
+    </section>
+
+    <!-- 問題一覧 -->
+    <section id="view-list" class="view" hidden>
+      <div class="card list-filter">
+        <input type="search" id="list-search" placeholder="問題文・答えで検索">
+        <div class="row">
+          <select id="list-category"></select>
+          <select id="list-sort">
+            <option value="order">取り込んだ順</option>
+            <option value="accAsc">正答率が低い順</option>
+            <option value="accDesc">正答率が高い順</option>
+            <option value="recent">最近解いた順</option>
+          </select>
+        </div>
+        <p class="muted small" id="list-count"></p>
+      </div>
+      <div id="list-items" class="list"></div>
+    </section>
+
+    <!-- 設定 -->
+    <section id="view-settings" class="view" hidden>
+      <div class="card">
+        <h2>分野別の成績</h2>
+        <div id="cat-stats"></div>
+      </div>
+      <div class="card">
+        <h2>バックアップ</h2>
+        <p class="hint">データはこの端末のブラウザ内に保存されています。機種変更や別の端末に移すときは、バックアップを書き出して読み込んでください。</p>
+        <button class="btn big" id="btn-export">バックアップを書き出す</button>
+        <label class="btn big file-btn">
+          バックアップを読み込む
+          <input type="file" id="backup-input" accept=".json,application/json" hidden>
+        </label>
+      </div>
+      <div class="card">
+        <h2>データの削除</h2>
+        <button class="btn big" id="btn-reset-history">回答履歴だけ消す</button>
+        <button class="btn ng big" id="btn-reset-all">すべてのデータを消す</button>
+      </div>
+      <div class="card">
+        <h2>取り込めるファイル形式</h2>
+        <p class="hint">CSV：1行目に見出し（<code>分野,問題,答え,解説,出典</code>。<code>id</code> 列はあってもなくても可）。<br>
+        JSON：<code>[{"category","question","answer","explanation","source"}, …]</code> の配列。<br>
+        「問題」と「答え」は必須です。問題文が同じものは同じ問題として扱い、内容（答え・解説など）を最新の内容に更新します。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-view="home" class="on"><span class="ic">🏠</span>ホーム</button>
+    <button data-view="list"><span class="ic">📋</span>問題一覧</button>
+    <button data-view="settings"><span class="ic">⚙️</span>成績・設定</button>
+  </nav>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="parser.js"></script>
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
