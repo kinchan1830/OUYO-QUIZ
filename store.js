@@ -7,7 +7,8 @@
   const P = global.QuizParser || (typeof require !== 'undefined' ? require('./parser.js') : null);
 
   function emptyState() {
-    return { version: 1, nextOrder: 1, questions: {}, history: {} };
+    // 問題キーをそのままプロパティ名に使うため、プロトタイプを持たないオブジェクトにする
+    return { version: 1, nextOrder: 1, questions: Object.create(null), history: Object.create(null) };
   }
 
   function createStore(storage) {
@@ -16,7 +17,13 @@
     function load() {
       try {
         const raw = storage && storage.getItem(STORAGE_KEY);
-        if (raw) state = Object.assign(emptyState(), JSON.parse(raw));
+        if (raw) {
+          const saved = JSON.parse(raw);
+          state = emptyState();
+          state.nextOrder = Number(saved.nextOrder) || 1;
+          Object.assign(state.questions, saved.questions);
+          Object.assign(state.history, saved.history);
+        }
       } catch (e) {
         console.warn('保存データを読み込めませんでした', e);
       }
@@ -124,11 +131,12 @@
       const res = upsertQuestions(data.questions);
       let merged = 0;
       for (const [key, list] of Object.entries(data.history || {})) {
-        if (!Array.isArray(list)) continue;
+        // キーは questionKey() の形式のみ受け付ける（__proto__ などの不正なキーを除外）
+        if (!/^q[0-9a-z]{1,16}$/.test(key) || !Array.isArray(list)) continue;
         const cur = state.history[key] || [];
         const seen = new Set(cur.map(x => x[0] + ':' + x[1]));
         for (const x of list) {
-          if (Array.isArray(x) && !seen.has(x[0] + ':' + x[1])) { cur.push([x[0], x[1] ? 1 : 0]); merged++; }
+          if (Array.isArray(x) && Number.isFinite(x[0]) && !seen.has(x[0] + ':' + x[1])) { cur.push([x[0], x[1] ? 1 : 0]); merged++; }
         }
         cur.sort((a, b) => a[0] - b[0]);
         state.history[key] = cur;

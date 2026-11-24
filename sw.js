@@ -1,5 +1,5 @@
 // オフラインでも使えるようにアプリ本体をキャッシュする（ネットワーク優先）
-const CACHE = 'ouyo-quiz-v1';
+const CACHE = 'ouyo-quiz-v2';
 const ASSETS = ['./', 'index.html', 'style.css', 'parser.js', 'store.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -67,3 +67,12 @@ test('バックアップを別端末に読み込むと問題と履歴が統合�
   assert.strictEqual(b.importBackup(a.exportData()).historyMerged, 0); // 2回目は増えない
   assert.strictEqual(b.statsOf(k).attempts, 2);
 });
+
+test('不正なキーを含むバックアップを読み込んでもプロトタイプが汚染されない', () => {
+  const s = createStore(memoryStorage());
+  const evil = JSON.parse('{"app":"ouyo-quiz","questions":[{"question":"Q","answer":"A"}],"history":{"__proto__":[[1,1]],"constructor":[[1,1]],"qabc":[["x",1],[5,1]]}}');
+  const r = s.importBackup(evil);
+  assert.strictEqual(r.historyMerged, 1);
+  assert.strictEqual({}.polluted, undefined);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(Object.prototype, '0'), false);
+});
